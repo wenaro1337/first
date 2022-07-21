@@ -1,0 +1,323 @@
+import pymysql
+import datetime
+import requests
+import vk_api
+from vk_api import utils
+from vk_api.bot_longpoll import VkBotLongPoll, VkBotEventType
+
+token = 'tokenVKBOT'
+open_weather_token = 'openweather token'
+
+
+vk_session = vk_api.VkApi(token= token)
+longpoll = VkBotLongPoll(vk_session, #id chat bot)
+idbot = #id chat bota                                                                                    
+host = 'name host mysql'
+user = 'name user mysql'
+password = 'password mysql'
+db_name = 'data-base name'
+
+
+def message_send(id,text):
+    vk_session.method('messages.send', {'chat_id': id, 'message': text, 'random_id': 0})
+
+
+
+for event in longpoll.listen():
+    if event.type == VkBotEventType.MESSAGE_NEW:  
+        if event.from_chat:
+            id = event.chat_id
+            peer_id = event.object.message['peer_id']
+            text_user = event.object.message['text'].lower()
+            id_user = event.object.message['from_id']
+            try:
+                dey = event.message.action['type']
+                invite_id = event.message.action['member_id']
+            except:
+                dey = ''
+                invite_id = ''
+            try:
+                invite_user = vk_session.method('users.get', {'user_ids': invite_id})
+                invite_username = invite_user[0]['first_name'] + ' ' + invite_user[0]['last_name']
+            except:
+                invite_user = ''
+                invite_username = ''
+
+
+
+            if dey == 'chat_invite_user':  
+                if invite_id == idbot:
+                    message_send(id, f'Поздравляю вы добавили меня в беседу!\nДля корректной работы прошу выдать мне права администратора!')
+                    try:
+                        connection = pymysql.connect(
+                        host = host,
+                        port = 3306,
+                        user = user,
+                        password = password,
+                        database = db_name,
+                        cursorclass= pymysql.cursors.DictCursor 
+                        )
+                        try:
+                            with connection.cursor() as cursor:
+                                create_table_query = "CREATE TABLE `settings`(name nvarchar(32)," \
+                                " value nvarchar(6666));" 
+                                cursor.execute(create_table_query)
+                                print("Table settings created successfully")
+                            with connection.cursor() as cursor:
+                                create_table_query = "CREATE TABLE `banlist`(idpolzovatel int," \
+                                " value nvarchar(100));" 
+                                cursor.execute(create_table_query)
+                                print("Table banlist created successfully")
+                            with connection.cursor() as cursor:
+                                create_table_query = "CREATE TABLE `nicknamelist`(idpolzovatelnick int," \
+                                " value nvarchar(100));" 
+                                cursor.execute(create_table_query)
+                                print("Table nicknamelist created successfully")
+                            with connection.cursor() as cursor:
+                                create_table_query = "CREATE TABLE `nagradilist`(idpolzovatelnick int," \
+                                " value nvarchar(100));" 
+                                cursor.execute(create_table_query)
+                                print("Table nagradilist created successfully")
+                        except Exception as ex:
+                            print('бот не создал базу')
+                            print(ex)
+                    except Exception as ex:
+                        print('Connection falled')
+                        print(ex)
+                else:
+                     message_send(id, f'Добро пожаловать, [id{invite_id}|{invite_username}]!')
+
+            # kick leave user       
+            if text_user == '1 enable':
+                try:
+                    connection = pymysql.connect(host = host,port = 3306,user = user,password = password,database = db_name,cursorclass= pymysql.cursors.DictCursor)
+                    try:
+                        with connection.cursor() as cursor:
+                            cursor.execute("SELECT * FROM `settings` WHERE name = 'kickvihod';")
+                            proverka = cursor.fetchone()
+                            if proverka == None:
+                                insert_query_1 = "INSERT INTO `settings` (name, value) VALUES ('kickvihod', 'enable');"
+                                cursor.execute(insert_query_1)
+                                connection.commit()
+                                message_send(id, f'✅ Команда включена, успешно!')
+                            else:
+                                message_send(id, f'⚠ Команда возможно уже включена.\n👥 Если Вы считаете, что произошла ошибка, обратитесь в тех.поддрежку')
+                    finally:
+                        connection.close()
+                except Exception as ex:
+                    print('Connection falled')
+                    print(ex)
+            elif text_user == '1 disable':
+                try:
+                    connection = pymysql.connect(host = host,port = 3306,user = user,password = password,database = db_name,cursorclass= pymysql.cursors.DictCursor)
+                    try:
+                        with connection.cursor() as cursor:
+                            insert_query_1 = "DELETE FROM `settings` WHERE name = 'kickvihod';"
+                            cursor.execute(insert_query_1)
+                            connection.commit()
+                            message_send(id, f'✅ Команда выключена, успешно!')
+                    finally:
+                        connection.close()
+                except Exception as ex:
+                    print('Connection falled')
+                    print(ex)   
+            if dey == 'chat_kick_user':
+                try:
+                    connection = pymysql.connect(host = host,port = 3306,user = user,password = password,database = db_name,cursorclass= pymysql.cursors.DictCursor)                
+                    try:
+                        with connection.cursor() as cursor:
+                            cursor.execute("SELECT * FROM `settings` WHERE name = 'kickvihod';")
+                            command_vihoda = cursor.fetchone()
+                            command_vihoda_one = command_vihoda['value']
+                    except:
+                        None
+                except:
+                    None
+                try:
+                    if command_vihoda_one == 'enable':
+                        vk_session.method('messages.removeChatUser', {'chat_id': id, 'user_id': event.message.action['member_id']})
+                    else:
+                        None
+                except:
+                    None
+
+            # Правила
+            if text_user.find('+правила') != -1:
+                try:
+                    pravila = (text_user.replace('+правила ', ''))
+                except Exception as ex:
+                    print(ex)
+                try:
+                    connection = pymysql.connect(host = host,port = 3306,user = user,password = password,database = db_name,charset='utf8',cursorclass= pymysql.cursors.DictCursor)
+                    with connection.cursor() as cursor:
+                        cursor.execute("SELECT * FROM `settings` WHERE name = 'rules';")
+                        pravilo_one = cursor.fetchone()
+                        if pravilo_one == None:
+                            insert_query_2 = f"INSERT INTO `settings` (name, value) VALUES ('rules', '{(pravila)}');"
+                            cursor.execute(insert_query_2)
+                            connection.commit()
+                            message_send(id, f'💬 Правила успешно занесены в базу данных.\n❗ Чтобы поменять правила, повторите действие!')
+                        else:
+                            update_query_2 = f"UPDATE `settings` SET value = '{pravila}' WHERE name = 'rules';"
+                            cursor.execute(update_query_2)
+                            connection.commit()
+                            message_send(id, f'💬 Правила успешно заменены!')
+                except Exception as ex:
+                    print(ex)
+            if text_user == '/правила' or text_user == 'правила':
+                try:
+                    connection = connection = pymysql.connect(host = host,port = 3306,user = user,password = password,database = db_name,charset='utf8',cursorclass= pymysql.cursors.DictCursor)
+                    with connection.cursor() as cursor:
+                        cursor.execute("SELECT * FROM `settings` WHERE name = 'rules';")
+                        send_pravila = cursor.fetchone()
+                        send_pravila_one = send_pravila['value']
+                        message_send(id, f'🔔 Правила:\n{send_pravila_one}')     
+                except:
+                    message_send(id, '❗ Возможно правила ещё не назначены.\n💬 Чтобы назначить правила пропишите "+правила".')
+            if text_user == '-правила':
+                try:
+                    connection = connection = pymysql.connect(host = host,port = 3306,user = user,password = password,database = db_name,charset='utf8',cursorclass= pymysql.cursors.DictCursor)
+                    with connection.cursor() as cursor:
+                        insert_query_2 = "DELETE FROM `settings` WHERE name = 'rules';"
+                        cursor.execute(insert_query_2)
+                        connection.commit()
+                        message_send(id, f'✅ Правила удалены, успешно!')
+                finally:
+                    connection.close()
+            # Приветствие
+            if text_user.find('+приветствие') != -1:
+                try:
+                    privetstvie = (text_user.replace('+приветствие ', ''))
+                except Exception as ex:
+                    print(ex)
+                try:
+                    connection = connection = pymysql.connect(host = host,port = 3306,user = user,password = password,database = db_name,charset='utf8',cursorclass= pymysql.cursors.DictCursor)
+                    with connection.cursor() as cursor:
+                        cursor.execute("SELECT * FROM `settings` WHERE name = 'privetstvie';")
+                        privetstvie_one = cursor.fetchone()
+                        if privetstvie_one == None:
+                            insert_query_3 = f"INSERT INTO `settings` (name, value) VALUES ('privetstvie', '{(privetstvie)}');"
+                            cursor.execute(insert_query_3)
+                            connection.commit()
+                            message_send(id, f'💬 Приветствие успешно сохранено.\n❗ Чтобы изменить приветствие, повторите действие!')
+                        else:
+                            update_query_3 = f"UPDATE `settings` SET value = '{privetstvie}' WHERE name = 'privetstvie';"
+                            cursor.execute(update_query_3)
+                            connection.commit()
+                            message_send(id, f'💬 Приветствие успешно заменено!')
+                finally:
+                    connection.close()
+            if text_user == 'приветствие' or text_user == '/приветствие':
+                try:
+                    connection = connection = pymysql.connect(host = host,port = 3306,user = user,password = password,database = db_name,charset='utf8',cursorclass= pymysql.cursors.DictCursor)
+                    with connection.cursor() as cursor:
+                        cursor.execute("SELECT * FROM `settings` WHERE name = 'privetstvie';")
+                        send_privetstvie = cursor.fetchone()
+                        send_privetstvie_one = send_pravila['value']
+                        message_send(id, f'🔔 Приветствие:\n{send_pravila_one}')     
+                except:
+                    message_send(id, '❗ Возможно приветствие еще не назначено.\n💬 Чтобы назначить приветствие пропишите "+приветствие".')
+            if text_user == '-приветствие':
+                try:
+                    connection = connection = pymysql.connect(host = host,port = 3306,user = user,password = password,database = db_name,charset='utf8',cursorclass= pymysql.cursors.DictCursor)
+                    with connection.cursor() as cursor:
+                        insert_query_3 = "DELETE FROM `settings` WHERE name = 'privetstvie';"
+                        cursor.execute(insert_query_3)
+                        connection.commit()
+                        message_send(id, f'✅ Приветствие удалено, успешно!')
+                finally:
+                    connection.close()
+            # nick name
+            if text_user.find('+ник') != -1:
+                iduser = event.object.message['from_id']
+                try:
+                    nickname = (text_user.replace('+ник ', ''))
+                except Exception as ex:
+                    print(ex)
+                try:
+                    connection = connection = pymysql.connect(host = host,port = 3306,user = user,password = password,database = db_name,charset='utf8',cursorclass= pymysql.cursors.DictCursor)
+                    with connection.cursor() as cursor:
+                        cursor.execute(f"SELECT * FROM `nicknamelist` WHERE idpolzovatelnick = '{iduser}';")
+                        nicknameone = cursor.fetchone()
+                        if nicknameone == None:
+                            insert_query_4 = f"INSERT INTO `nicknamelist` (idpolzovatelnick, value) VALUES ('{(iduser)}', '{(nickname)}');"
+                            cursor.execute(insert_query_4)
+                            connection.commit()
+                            message_send(id, f'🔱 Ник [id{iduser}|пользователя] установлен.')
+                        else:
+                            update_query_3 = f"UPDATE `nicknamelist` SET value = '{nickname}' WHERE idpolzovatelnick = '{(iduser)}';"
+                            cursor.execute(update_query_3)
+                            connection.commit()
+                            message_send(id, f'🔱 Ник [id{iduser}|пользователя] изменён на новый.')      
+                finally:
+                    connection.close()
+            if text_user == '-ник':
+                iduser = event.object.message['from_id']
+                try:
+                    connection = connection = pymysql.connect(host = host,port = 3306,user = user,password = password,database = db_name,charset='utf8',cursorclass= pymysql.cursors.DictCursor)
+                    with connection.cursor() as cursor:
+                        delete_query = f"DELETE FROM `nicknamelist` WHERE idpolzovatelnick = '{(iduser)}';"
+                        cursor.execute(delete_query)
+                        connection.commit()
+                        message_send(id, f'🔱 [id{iduser}|Пользователю] удалён ник-нейм.')
+                finally:
+                    connection.close()
+            #weather
+            if text_user.find('/погода') != -1:
+                try:
+                    pogoda = (text_user.replace('/погода ', ''))
+                except:
+                    print('варнигн')
+                city = pogoda
+                def get_weather(city, open_weather_token):
+                    try:
+                        r = requests.get(
+                        f"http://api.openweathermap.org/data/2.5/weather?q={city}&appid={open_weather_token}&units=metric"
+                        )
+                        data = r.json()
+                        city = data["name"]
+                        temp = data["main"]["temp"]
+                        humidity = data["main"]["humidity"]
+                        wind = data["wind"]["speed"]
+                        sunrise_timestamp = datetime.datetime.fromtimestamp(data['sys']['sunrise'])
+                        sunset_timestamp = datetime.datetime.fromtimestamp(data['sys']['sunset'])
+                        message_send(id, f'🌏Погода в городе: {city}\n🌡Температура: {temp}°\n💧Влажность: {humidity}%\n💨Скорость ветра: {wind} м/с\n🌕Восход солнца: {sunrise_timestamp}\n🌑Заход солнца: {sunset_timestamp}')
+                    except:
+                        message_send(id,"Повторите попытку")
+
+                def pgd():
+                    get_weather(city,open_weather_token)
+                if pgd == pgd:
+                    pgd()
+            # Ban and kick
+            if text_user == 'бан' or text_user == '/бан' or text_user == 'ban' or text_user == '/ban':
+                reply_message = event.message.reply_message['from_id']
+                banned_user = vk_session.method('users.get', {'user_ids': reply_message})
+                banned_user_name = banned_user[0]['first_name'] + ' ' + banned_user[0]['last_name']
+                try:
+                    connection = connection = pymysql.connect(host = host,port = 3306,user = user,password = password,database = db_name,charset='utf8',cursorclass= pymysql.cursors.DictCursor)
+                    print('Connection succefuly..')
+                    print('#'*20)
+                    try:
+                        with connection.cursor() as cursor:
+                            insert_query_1 = f"INSERT INTO `banlist` (idpolzovatel, value) VALUES ('{(reply_message)}', 'banned');"
+                            cursor.execute(insert_query_1)
+                            connection.commit()
+                            message_send(id, f'⛔ [id{reply_message}|{banned_user_name}], был забанен!')
+                            vk_session.method('messages.removeChatUser', {'chat_id': id, 'member_id': event.message.reply_message['from_id']})
+                    except:
+                        None
+                except Exception as ex:
+                    print(ex)
+            if text_user == 'кик' or text_user == '/кик' or text_user == 'kick' or text_user == '/kick':
+                reply_message = event.message.reply_message['from_id']
+                banned_user = vk_session.method('users.get', {'user_ids': reply_message})
+                banned_user_name = banned_user[0]['first_name'] + ' ' + banned_user[0]['last_name']
+                try:
+                    message_send(id, f'⛔ [id{reply_message}|{banned_user_name}], был кикнут!')   
+                    vk_session.method('messages.removeChatUser', {'chat_id': id, 'member_id': event.message.reply_message['from_id']})
+                except:
+                    None
+            #############################################
+            if text_user == 'бот':
+                message_send(id, f'👽Всё хорошо вроде!')

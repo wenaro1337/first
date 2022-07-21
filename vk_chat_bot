@@ -14,6 +14,7 @@ longpoll = VkBotLongPoll(vk_session, #id chat bot)
 idbot = #id chat bota                                                                                    
 host = 'name host mysql'
 user = 'name user mysql'
+port = 'port mysql'
 password = 'password mysql'
 db_name = 'data-base name'
 
@@ -51,7 +52,7 @@ for event in longpoll.listen():
                     try:
                         connection = pymysql.connect(
                         host = host,
-                        port = 3306,
+                        port = port,
                         user = user,
                         password = password,
                         database = db_name,
@@ -73,11 +74,6 @@ for event in longpoll.listen():
                                 " value nvarchar(100));" 
                                 cursor.execute(create_table_query)
                                 print("Table nicknamelist created successfully")
-                            with connection.cursor() as cursor:
-                                create_table_query = "CREATE TABLE `nagradilist`(idpolzovatelnick int," \
-                                " value nvarchar(100));" 
-                                cursor.execute(create_table_query)
-                                print("Table nagradilist created successfully")
                         except Exception as ex:
                             print('бот не создал базу')
                             print(ex)
@@ -87,10 +83,10 @@ for event in longpoll.listen():
                 else:
                      message_send(id, f'Добро пожаловать, [id{invite_id}|{invite_username}]!')
 
-            # kick leave user       
+            # kick leave user write in chat 1 enable, then who leave will be excluded      
             if text_user == '1 enable':
                 try:
-                    connection = pymysql.connect(host = host,port = 3306,user = user,password = password,database = db_name,cursorclass= pymysql.cursors.DictCursor)
+                    connection = pymysql.connect(host = host,port = port,user = user,password = password,database = db_name,cursorclass= pymysql.cursors.DictCursor)
                     try:
                         with connection.cursor() as cursor:
                             cursor.execute("SELECT * FROM `settings` WHERE name = 'kickvihod';")
@@ -107,9 +103,10 @@ for event in longpoll.listen():
                 except Exception as ex:
                     print('Connection falled')
                     print(ex)
+            # the opposite "1 enable"     
             elif text_user == '1 disable':
                 try:
-                    connection = pymysql.connect(host = host,port = 3306,user = user,password = password,database = db_name,cursorclass= pymysql.cursors.DictCursor)
+                    connection = pymysql.connect(host = host,port = port,user = user,password = password,database = db_name,cursorclass= pymysql.cursors.DictCursor)
                     try:
                         with connection.cursor() as cursor:
                             insert_query_1 = "DELETE FROM `settings` WHERE name = 'kickvihod';"
@@ -120,10 +117,11 @@ for event in longpoll.listen():
                         connection.close()
                 except Exception as ex:
                     print('Connection falled')
-                    print(ex)   
+                    print(ex)
+            # check dey in chat and connect to data base. If "1 enable" then when you exit it will kick        
             if dey == 'chat_kick_user':
                 try:
-                    connection = pymysql.connect(host = host,port = 3306,user = user,password = password,database = db_name,cursorclass= pymysql.cursors.DictCursor)                
+                    connection = pymysql.connect(host = host,port = port,user = user,password = password,database = db_name,cursorclass= pymysql.cursors.DictCursor)                
                     try:
                         with connection.cursor() as cursor:
                             cursor.execute("SELECT * FROM `settings` WHERE name = 'kickvihod';")
@@ -141,14 +139,15 @@ for event in longpoll.listen():
                 except:
                     None
 
-            # Правила
+            # Правила, rules send +правила привет, 
+            # the entered value will be entered into the database
             if text_user.find('+правила') != -1:
                 try:
                     pravila = (text_user.replace('+правила ', ''))
                 except Exception as ex:
                     print(ex)
                 try:
-                    connection = pymysql.connect(host = host,port = 3306,user = user,password = password,database = db_name,charset='utf8',cursorclass= pymysql.cursors.DictCursor)
+                    connection = pymysql.connect(host = host,port = port,user = user,password = password,database = db_name,charset='utf8',cursorclass= pymysql.cursors.DictCursor)
                     with connection.cursor() as cursor:
                         cursor.execute("SELECT * FROM `settings` WHERE name = 'rules';")
                         pravilo_one = cursor.fetchone()
@@ -164,9 +163,10 @@ for event in longpoll.listen():
                             message_send(id, f'💬 Правила успешно заменены!')
                 except Exception as ex:
                     print(ex)
+            # output a summary of rules from the database        
             if text_user == '/правила' or text_user == 'правила':
                 try:
-                    connection = connection = pymysql.connect(host = host,port = 3306,user = user,password = password,database = db_name,charset='utf8',cursorclass= pymysql.cursors.DictCursor)
+                    connection = connection = pymysql.connect(host = host,port = port,user = user,password = password,database = db_name,charset='utf8',cursorclass= pymysql.cursors.DictCursor)
                     with connection.cursor() as cursor:
                         cursor.execute("SELECT * FROM `settings` WHERE name = 'rules';")
                         send_pravila = cursor.fetchone()
@@ -174,9 +174,10 @@ for event in longpoll.listen():
                         message_send(id, f'🔔 Правила:\n{send_pravila_one}')     
                 except:
                     message_send(id, '❗ Возможно правила ещё не назначены.\n💬 Чтобы назначить правила пропишите "+правила".')
+            # delete rules in database        
             if text_user == '-правила':
                 try:
-                    connection = connection = pymysql.connect(host = host,port = 3306,user = user,password = password,database = db_name,charset='utf8',cursorclass= pymysql.cursors.DictCursor)
+                    connection = connection = pymysql.connect(host = host,port = port,user = user,password = password,database = db_name,charset='utf8',cursorclass= pymysql.cursors.DictCursor)
                     with connection.cursor() as cursor:
                         insert_query_2 = "DELETE FROM `settings` WHERE name = 'rules';"
                         cursor.execute(insert_query_2)
@@ -191,7 +192,7 @@ for event in longpoll.listen():
                 except Exception as ex:
                     print(ex)
                 try:
-                    connection = connection = pymysql.connect(host = host,port = 3306,user = user,password = password,database = db_name,charset='utf8',cursorclass= pymysql.cursors.DictCursor)
+                    connection = connection = pymysql.connect(host = host,port = port,user = user,password = password,database = db_name,charset='utf8',cursorclass= pymysql.cursors.DictCursor)
                     with connection.cursor() as cursor:
                         cursor.execute("SELECT * FROM `settings` WHERE name = 'privetstvie';")
                         privetstvie_one = cursor.fetchone()
@@ -209,7 +210,7 @@ for event in longpoll.listen():
                     connection.close()
             if text_user == 'приветствие' or text_user == '/приветствие':
                 try:
-                    connection = connection = pymysql.connect(host = host,port = 3306,user = user,password = password,database = db_name,charset='utf8',cursorclass= pymysql.cursors.DictCursor)
+                    connection = connection = pymysql.connect(host = host,port = port,user = user,password = password,database = db_name,charset='utf8',cursorclass= pymysql.cursors.DictCursor)
                     with connection.cursor() as cursor:
                         cursor.execute("SELECT * FROM `settings` WHERE name = 'privetstvie';")
                         send_privetstvie = cursor.fetchone()
@@ -219,7 +220,7 @@ for event in longpoll.listen():
                     message_send(id, '❗ Возможно приветствие еще не назначено.\n💬 Чтобы назначить приветствие пропишите "+приветствие".')
             if text_user == '-приветствие':
                 try:
-                    connection = connection = pymysql.connect(host = host,port = 3306,user = user,password = password,database = db_name,charset='utf8',cursorclass= pymysql.cursors.DictCursor)
+                    connection = connection = pymysql.connect(host = host,port = port,user = user,password = password,database = db_name,charset='utf8',cursorclass= pymysql.cursors.DictCursor)
                     with connection.cursor() as cursor:
                         insert_query_3 = "DELETE FROM `settings` WHERE name = 'privetstvie';"
                         cursor.execute(insert_query_3)
@@ -235,7 +236,7 @@ for event in longpoll.listen():
                 except Exception as ex:
                     print(ex)
                 try:
-                    connection = connection = pymysql.connect(host = host,port = 3306,user = user,password = password,database = db_name,charset='utf8',cursorclass= pymysql.cursors.DictCursor)
+                    connection = connection = pymysql.connect(host = host,port = port,user = user,password = password,database = db_name,charset='utf8',cursorclass= pymysql.cursors.DictCursor)
                     with connection.cursor() as cursor:
                         cursor.execute(f"SELECT * FROM `nicknamelist` WHERE idpolzovatelnick = '{iduser}';")
                         nicknameone = cursor.fetchone()
@@ -254,7 +255,7 @@ for event in longpoll.listen():
             if text_user == '-ник':
                 iduser = event.object.message['from_id']
                 try:
-                    connection = connection = pymysql.connect(host = host,port = 3306,user = user,password = password,database = db_name,charset='utf8',cursorclass= pymysql.cursors.DictCursor)
+                    connection = connection = pymysql.connect(host = host,port = port,user = user,password = password,database = db_name,charset='utf8',cursorclass= pymysql.cursors.DictCursor)
                     with connection.cursor() as cursor:
                         delete_query = f"DELETE FROM `nicknamelist` WHERE idpolzovatelnick = '{(iduser)}';"
                         cursor.execute(delete_query)
@@ -284,7 +285,6 @@ for event in longpoll.listen():
                         message_send(id, f'🌏Погода в городе: {city}\n🌡Температура: {temp}°\n💧Влажность: {humidity}%\n💨Скорость ветра: {wind} м/с\n🌕Восход солнца: {sunrise_timestamp}\n🌑Заход солнца: {sunset_timestamp}')
                     except:
                         message_send(id,"Повторите попытку")
-
                 def pgd():
                     get_weather(city,open_weather_token)
                 if pgd == pgd:
@@ -321,3 +321,5 @@ for event in longpoll.listen():
             #############################################
             if text_user == 'бот':
                 message_send(id, f'👽Всё хорошо вроде!')
+            #############################################
+            # the code is publicly available if someone needs it, take it away, but it's not perfect, improvements are needed <3
